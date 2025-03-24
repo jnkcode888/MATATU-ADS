@@ -1,139 +1,153 @@
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import {
   Box,
-  Heading,
-  Text,
   Button,
-  Input,
   FormControl,
   FormLabel,
-  Stack,
+  Input,
+  VStack,
+  Heading,
+  Text,
   useToast,
+  Alert,
+  AlertIcon,
 } from '@chakra-ui/react';
-import { supabase } from '../lib/auth';
-import { useRouter } from 'next/router';
+import { supabase } from '../lib/supabase';
 
 export default function ResetPassword() {
-  const [newPassword, setNewPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-  const toast = useToast();
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [message, setMessage] = useState('');
   const router = useRouter();
+  const toast = useToast();
 
   useEffect(() => {
-    // Check if there's a session with a reset token
     const checkSession = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) {
-        console.error('Error checking session:', error);
-        setErrorMessage('Invalid or expired reset link. Please try again.');
-        return;
-      }
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Session error:', error);
+          router.push('/login');
+          return;
+        }
 
-      if (!session || !session.access_token) {
-        setErrorMessage('Invalid or expired reset link. Please try again.');
+        if (!session) {
+          router.push('/login');
+          return;
+        }
+      } catch (error) {
+        console.error('Error checking session:', error);
+        router.push('/login');
       }
     };
 
     checkSession();
-  }, []);
+  }, [router]);
 
-  const handleResetPassword = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setMessage('');
 
-    if (!newPassword) {
-      toast({
-        title: 'Error',
-        description: 'Please enter a new password',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      setLoading(false);
       return;
     }
 
-    setIsLoading(true);
-
     try {
       const { error } = await supabase.auth.updateUser({
-        password: newPassword,
+        password: password
       });
 
-      if (error) {
-        throw new Error(error.message);
-      }
+      if (error) throw error;
 
+      setMessage('Password updated successfully');
       toast({
-        title: 'Password Updated',
-        description: 'Your password has been successfully updated. Please log in with your new password.',
+        title: 'Success',
+        description: 'Your password has been updated successfully.',
         status: 'success',
-        duration: 7000,
+        duration: 5000,
         isClosable: true,
       });
 
-      setNewPassword('');
-      router.push('/');
+      // Redirect to dashboard after successful password reset
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 2000);
     } catch (error) {
-      console.error('Password update failed:', error.message);
+      console.error('Reset password error:', error);
+      setError(error.message);
       toast({
-        title: 'Password Update Failed',
-        description: error.message,
+        title: 'Error',
+        description: error.message || 'Failed to reset password',
         status: 'error',
         duration: 5000,
         isClosable: true,
       });
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  if (errorMessage) {
-    return (
-      <Box p={8} maxWidth="400px" mx="auto">
-        <Heading textAlign="center">Reset Password</Heading>
-        <Text mt={4} textAlign="center" color="red.500">
-          {errorMessage}
-        </Text>
-        <Button
-          mt={4}
-          colorScheme="blue"
-          width="full"
-          onClick={() => router.push('/')}
-        >
-          Go to Login
-        </Button>
-      </Box>
-    );
-  }
-
   return (
     <Box p={8} maxWidth="400px" mx="auto">
-      <Heading textAlign="center">Reset Password</Heading>
-      <Text mt={4} textAlign="center">
-        Enter your new password below.
-      </Text>
-      <Box as="form" mt={8} onSubmit={handleResetPassword}>
-        <Stack spacing={4}>
-          <FormControl id="new-password" isRequired>
-            <FormLabel>New Password</FormLabel>
-            <Input
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Enter your new password"
-            />
-          </FormControl>
-          <Button
-            type="submit"
-            colorScheme="blue"
-            width="full"
-            mt={4}
-            isLoading={isLoading}
-          >
-            Update Password
-          </Button>
-        </Stack>
-      </Box>
+      <VStack spacing={6}>
+        <Heading>Reset Password</Heading>
+        <Text>Please enter your new password below.</Text>
+
+        <Box as="form" onSubmit={handleSubmit} width="100%">
+          <VStack spacing={4}>
+            <FormControl isRequired>
+              <FormLabel>New Password</FormLabel>
+              <Input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter new password"
+              />
+            </FormControl>
+
+            <FormControl isRequired>
+              <FormLabel>Confirm Password</FormLabel>
+              <Input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm new password"
+              />
+            </FormControl>
+
+            {error && (
+              <Alert status="error">
+                <AlertIcon />
+                {error}
+              </Alert>
+            )}
+
+            {message && (
+              <Alert status="success">
+                <AlertIcon />
+                {message}
+              </Alert>
+            )}
+
+            <Button
+              type="submit"
+              colorScheme="blue"
+              width="100%"
+              isLoading={loading}
+            >
+              Reset Password
+            </Button>
+          </VStack>
+        </Box>
+      </VStack>
     </Box>
   );
 }

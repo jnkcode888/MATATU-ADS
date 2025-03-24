@@ -1,10 +1,23 @@
 // pages/api/delete-user.js
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseServiceRoleKey) {
+  console.error('Missing Supabase environment variables:', {
+    hasUrl: !!supabaseUrl,
+    hasServiceRoleKey: !!supabaseServiceRoleKey
+  });
+}
+
+// Create Supabase client with service role key for admin operations
+const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
+  }
+});
 
 export const config = {
   api: {
@@ -24,6 +37,8 @@ export default async function handler(req, res) {
   }
 
   try {
+    console.log('Attempting to delete user:', userId);
+
     // First, delete from users table
     const { error: usersError } = await supabase
       .from('users')
@@ -35,6 +50,8 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Failed to delete user from users table' });
     }
 
+    console.log('Successfully deleted from users table');
+
     // Then, delete from auth.users
     const { error: authError } = await supabase.auth.admin.deleteUser(userId);
 
@@ -42,6 +59,8 @@ export default async function handler(req, res) {
       console.error('Error deleting from auth.users:', authError);
       return res.status(500).json({ error: 'Failed to delete user from auth.users' });
     }
+
+    console.log('Successfully deleted from auth.users');
 
     return res.status(200).json({ message: 'User deleted successfully' });
   } catch (error) {

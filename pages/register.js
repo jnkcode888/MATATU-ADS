@@ -12,18 +12,54 @@ import {
   useToast,
   Radio,
   RadioGroup,
+  Select,
+  Alert,
+  AlertIcon,
+  Link,
+  Divider,
+  HStack,
 } from '@chakra-ui/react';
 import { supabase } from '../lib/supabase';
 import { useRouter } from 'next/router';
+import { FcGoogle } from 'react-icons/fc';
 
 export default function Register() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [role, setRole] = useState('business');
   const [userType, setUserType] = useState('business');
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState(null);
   const toast = useToast();
   const router = useRouter();
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setIsGoogleLoading(true);
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`
+        }
+      });
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Google sign-in error:', error);
+      toast({
+        title: 'Error',
+        description: error.message,
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -52,17 +88,23 @@ export default function Register() {
         throw new Error(data.error || 'Registration failed');
       }
 
-      // Set the session in Supabase client
-      const { error: sessionError } = await supabase.auth.setSession({
-        access_token: data.session.access_token,
-        refresh_token: data.session.refresh_token,
-      });
-
-      if (sessionError) {
-        throw new Error('Failed to set session');
+      if (data.requiresVerification) {
+        // Show verification message
+        toast({
+          title: 'Registration successful!',
+          description: 'Please check your email to verify your account.',
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+        });
+        // Optionally redirect to a verification page or show a verification modal
+        setTimeout(() => {
+          router.push('/verify-email');
+        }, 3000);
+        return;
       }
 
-      // Redirect based on role
+      // If no verification required, proceed with login
       if (role === 'admin') {
         router.push('/admin');
       } else if (role === 'business') {
@@ -73,6 +115,13 @@ export default function Register() {
     } catch (error) {
       console.error('Registration error:', error);
       setError(error.message);
+      toast({
+        title: 'Registration failed',
+        description: error.message,
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -82,7 +131,29 @@ export default function Register() {
     <Box p={8} maxWidth="400px" mx="auto">
       <Heading textAlign="center">Sign Up for Matatu Ads</Heading>
       <Text mt={4} textAlign="center">Create an account to get started</Text>
-      <Box as="form" mt={8} onSubmit={handleSubmit}>
+      
+      {/* Google Sign In Button */}
+      <Box mt={8}>
+        <Button
+          onClick={handleGoogleSignIn}
+          isLoading={isGoogleLoading}
+          loadingText="Signing in..."
+          w="100%"
+          variant="outline"
+          leftIcon={<FcGoogle />}
+          size="lg"
+        >
+          Continue with Google
+        </Button>
+      </Box>
+
+      <HStack my={8} spacing={4}>
+        <Divider flex={1} />
+        <Text color="gray.500" fontSize="sm">or</Text>
+        <Divider flex={1} />
+      </HStack>
+
+      <Box as="form" onSubmit={handleSubmit}>
         <Stack spacing={4}>
           <FormControl id="email" isRequired>
             <FormLabel>Email</FormLabel>
@@ -90,41 +161,69 @@ export default function Register() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="Your email"
+              placeholder="Enter your email"
             />
           </FormControl>
+
           <FormControl id="password" isRequired>
             <FormLabel>Password</FormLabel>
             <Input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Your password"
+              placeholder="Enter your password"
             />
           </FormControl>
-          <FormControl id="userType" isRequired>
-            <FormLabel>I want to:</FormLabel>
-            <RadioGroup onChange={setUserType} value={userType}>
-              <Stack direction="row">
-                <Radio value="business">Advertise (Business)</Radio>
-                <Radio value="freelancer">Drive (Freelancer)</Radio>
-              </Stack>
-            </RadioGroup>
+
+          <FormControl id="name" isRequired>
+            <FormLabel>Full Name</FormLabel>
+            <Input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Enter your full name"
+            />
           </FormControl>
+
+          <FormControl id="phone" isRequired>
+            <FormLabel>Phone Number</FormLabel>
+            <Input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="Enter your phone number"
+            />
+          </FormControl>
+
+          <FormControl id="role" isRequired>
+            <FormLabel>Account Type</FormLabel>
+            <Select value={role} onChange={(e) => setRole(e.target.value)}>
+              <option value="business">Business</option>
+              <option value="freelancer">Brand Ambassador</option>
+            </Select>
+          </FormControl>
+
+          {error && (
+            <Alert status="error">
+              <AlertIcon />
+              {error}
+            </Alert>
+          )}
+
           <Button
             type="submit"
             colorScheme="blue"
-            width="full"
-            mt={4}
             isLoading={isLoading}
+            loadingText="Creating account..."
           >
-            Sign Up
+            Create Account
           </Button>
+
           <Text textAlign="center">
             Already have an account?{' '}
-            <Button variant="link" onClick={() => router.push('/')}>
-              Log in
-            </Button>
+            <Link href="/" color="blue.500">
+              Sign in
+            </Link>
           </Text>
         </Stack>
       </Box>
