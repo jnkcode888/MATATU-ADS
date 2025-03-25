@@ -25,28 +25,34 @@ export default function ResetPassword() {
   const toast = useToast();
 
   useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Session error:', error);
-          router.push('/login');
-          return;
-        }
+    const handleResetToken = async () => {
+      const { access_token, refresh_token } = router.query;
 
-        if (!session) {
+      if (access_token && refresh_token) {
+        // Set the session from URL tokens
+        const { error } = await supabase.auth.setSession({
+          access_token,
+          refresh_token,
+        });
+        if (error) {
+          console.error('Error setting session from token:', error);
+          setError('Invalid or expired reset link');
           router.push('/login');
-          return;
         }
-      } catch (error) {
-        console.error('Error checking session:', error);
-        router.push('/login');
+      } else {
+        // Check existing session if no tokens in URL
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error || !session) {
+          console.error('No valid session or tokens:', error);
+          router.push('/login');
+        }
       }
     };
 
-    checkSession();
-  }, [router]);
+    if (router.isReady) {
+      handleResetToken();
+    }
+  }, [router, router.isReady]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -61,11 +67,26 @@ export default function ResetPassword() {
     }
 
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: password
-      });
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) {
+        throw new Error('No active session. Please request a new reset link.');
+      }
 
-      if (error) throw error;
+      const { error: updateError } = await supabase.auth.updateUser({
+        password,
+      });
+      if (updateError) throw updateError;
+
+      // Fetch user profile to determine role
+      const { data: profile, error: profileError } = await supabase
+        .from('users')
+        .select('user_type')
+        .eq('id', session.user.id)
+        .single();
+
+      if (profileError && profileError.code !== 'PGRST116') {
+        console.error('Profile fetch error:', profileError);
+      }
 
       setMessage('Password updated successfully');
       toast({
@@ -76,13 +97,21 @@ export default function ResetPassword() {
         isClosable: true,
       });
 
-      // Redirect to dashboard after successful password reset
+      // Redirect based on user_type
       setTimeout(() => {
-        router.push('/dashboard');
+        if (profile?.user_type === 'admin') {
+          router.push('/admin');
+        } else if (profile?.user_type === 'freelancer') {
+          router.push('/freelancer/dashboard');
+        } else if (profile?.user_type === 'business') {
+          router.push('/business/dashboard');
+        } else {
+          router.push('/dashboard'); // Fallback
+        }
       }, 2000);
     } catch (error) {
       console.error('Reset password error:', error);
-      setError(error.message);
+      setError(error.message || 'Failed to reset password');
       toast({
         title: 'Error',
         description: error.message || 'Failed to reset password',

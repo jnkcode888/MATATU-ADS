@@ -1,42 +1,9 @@
-// pages/index.js
 import { useState, useEffect } from 'react';
 import {
-  Box,
-  Button,
-  Container,
-  Flex,
-  Grid,
-  Heading,
-  Text,
-  Stack,
-  Icon,
-  useDisclosure,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalCloseButton,
-  FormControl,
-  FormLabel,
-  Input,
-  useToast,
-  Alert,
-  AlertIcon,
-  VStack,
-  HStack,
-  Image,
-  SimpleGrid,
-  List,
-  ListItem,
-  ListIcon,
-  Stat,
-  StatLabel,
-  StatNumber,
-  StatHelpText,
-  Divider,
-  IconButton,
-  AspectRatio,
+  Box, Button, Container, Flex, Grid, Heading, Text, Stack, Icon, useDisclosure, Modal, ModalOverlay,
+  ModalContent, ModalHeader, ModalBody, ModalCloseButton, FormControl, FormLabel, Input, useToast,
+  Alert, AlertIcon, VStack, HStack, Image, SimpleGrid, List, ListItem, ListIcon, Stat, StatLabel,
+  StatNumber, StatHelpText, Divider, IconButton, AspectRatio
 } from '@chakra-ui/react';
 import { supabase } from '../lib/supabase';
 import { useRouter } from 'next/router';
@@ -166,6 +133,12 @@ export default function Home() {
     onOpen: onResetOpen,
     onClose: onResetClose
   } = useDisclosure();
+
+  // Debug logs to verify environment variables
+  useEffect(() => {
+    console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+    console.log('Supabase Key:', process.env.NEXT_PUBLIC_SUPABASE_KEY);
+  }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -412,13 +385,13 @@ export default function Home() {
         <Container maxW="7xl" position="relative" zIndex="2" height="100%" pt={28}>
           <VStack
             spacing={6}
-      align="center"
-      justify="center"
+            align="center"
+            justify="center"
             height="100%"
             color="white"
             textAlign="center"
-      px={4}
-    >
+            px={4}
+          >
             <Heading
               as="h1"
               size="2xl"
@@ -500,14 +473,14 @@ export default function Home() {
                 How they engage every passenger, share their message, and inspire action?
               </Text>
               <Text fontSize="lg" color="gray.700">
-                That&apos;s exactly what our brand ambassadors do for your products. They don&apos;t just advertise - 
+                Thats exactly what our brand ambassadors do for your products. They dont just advertise - 
                 they create genuine connections, share your story, and turn commuters into customers. 
-                It&apos;s personal, it&apos;s powerful, and it works.
+                Its personal, its powerful, and it works.
               </Text>
             </Box>
             <Box 
               bg="blue.50" 
-        p={8}
+              p={8}
               rounded="xl" 
               shadow="xl"
               borderLeft="4px"
@@ -653,7 +626,7 @@ export default function Home() {
             <Text fontSize="lg" maxW="2xl">
               Join hundreds of businesses already succeeding with Matatu Ads. 
               Start your campaign today and reach thousands of potential customers.
-        </Text>
+            </Text>
             <Button
               size="lg"
               colorScheme="whiteAlpha"
@@ -673,36 +646,36 @@ export default function Home() {
           <ModalCloseButton />
           <ModalBody pb={6}>
             <VStack spacing={4}>
-        {authError && (
+              {authError && (
                 <Alert status="error">
-            <AlertIcon />
-            {authError}
-          </Alert>
-        )}
+                  <AlertIcon />
+                  {authError}
+                </Alert>
+              )}
               <FormControl>
-              <FormLabel>Email</FormLabel>
-              <Input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </FormControl>
+                <FormLabel>Email</FormLabel>
+                <Input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </FormControl>
               <FormControl>
-              <FormLabel>Password</FormLabel>
-              <Input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </FormControl>
-            <Button
-              colorScheme="blue"
-              width="full"
+                <FormLabel>Password</FormLabel>
+                <Input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </FormControl>
+              <Button
+                colorScheme="blue"
+                width="full"
                 onClick={handleLogin}
-              isLoading={isLoading}
-            >
-              Login
-            </Button>
+                isLoading={isLoading}
+              >
+                Login
+              </Button>
               <Button variant="link" onClick={onResetOpen}>
                 Forgot Password?
               </Button>

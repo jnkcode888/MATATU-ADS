@@ -1,23 +1,7 @@
-// pages/register.js
-import { useState } from 'react';
+import { useState, useEffect } from 'react'; // Added useEffect import
 import {
-  Box,
-  Heading,
-  Text,
-  Button,
-  Input,
-  FormControl,
-  FormLabel,
-  Stack,
-  useToast,
-  Radio,
-  RadioGroup,
-  Select,
-  Alert,
-  AlertIcon,
-  Link,
-  Divider,
-  HStack,
+  Box, Heading, Text, Button, Input, FormControl, FormLabel, Stack, useToast, Select, Alert,
+  AlertIcon, Link, Divider, HStack
 } from '@chakra-ui/react';
 import { supabase } from '../lib/supabase';
 import { useRouter } from 'next/router';
@@ -36,13 +20,20 @@ export default function Register() {
   const toast = useToast();
   const router = useRouter();
 
+  // Debug logs
+  useEffect(() => {
+    console.log('Google Client ID:', process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID);
+    console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+    console.log('Supabase Key:', process.env.NEXT_PUBLIC_SUPABASE_KEY);
+  }, []);
+
   const handleGoogleSignIn = async () => {
     try {
       setIsGoogleLoading(true);
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`
+          redirectTo: `${window.location.origin}/api/auth/callback`
         }
       });
 
@@ -89,7 +80,6 @@ export default function Register() {
       }
 
       if (data.requiresVerification) {
-        // Show verification message
         toast({
           title: 'Registration successful!',
           description: 'Please check your email to verify your account.',
@@ -97,14 +87,12 @@ export default function Register() {
           duration: 3000,
           isClosable: true,
         });
-        // Optionally redirect to a verification page or show a verification modal
         setTimeout(() => {
           router.push('/verify-email');
         }, 3000);
         return;
       }
 
-      // If no verification required, proceed with login
       if (role === 'admin') {
         router.push('/admin');
       } else if (role === 'business') {

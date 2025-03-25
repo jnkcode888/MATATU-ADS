@@ -31,7 +31,6 @@ export default function CompleteRegistration() {
 
     try {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
       if (sessionError || !session?.user) {
         throw new Error('Not authenticated');
       }
@@ -43,7 +42,7 @@ export default function CompleteRegistration() {
         },
         body: JSON.stringify({
           email: session.user.email,
-          name: session.user.user_metadata.name,
+          name: session.user.user_metadata.name || 'Unknown', // Fallback if name isn’t provided by Google
           role: formData.role,
           phone: formData.phone,
           userType: formData.userType,
@@ -52,7 +51,6 @@ export default function CompleteRegistration() {
       });
 
       const data = await response.json();
-
       if (!response.ok) {
         throw new Error(data.error || 'Registration failed');
       }
@@ -65,11 +63,19 @@ export default function CompleteRegistration() {
         isClosable: true,
       });
 
-      // Redirect based on role
-      if (formData.role === 'admin') {
-        router.push('/admin');
-      } else {
-        router.push('/dashboard');
+      // Redirect based on selected role
+      switch (formData.role) {
+        case 'admin':
+          router.push('/admin');
+          break;
+        case 'freelancer':
+          router.push('/freelancer/dashboard');
+          break;
+        case 'business':
+          router.push('/business/dashboard');
+          break;
+        default:
+          router.push('/dashboard'); // Fallback
       }
     } catch (error) {
       console.error('Registration error:', error);
@@ -170,4 +176,4 @@ export default function CompleteRegistration() {
       </div>
     </div>
   );
-} 
+}
