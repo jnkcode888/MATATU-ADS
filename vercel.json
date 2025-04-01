@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    }
+  ],
+  "env": {
+    "NEXT_PUBLIC_SUPABASE_URL": "https://ckfsglsyfbdlgwrwxlvp.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrZnNnbHN5ZmJkbGd3cnd4bHZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI1Mzg4MzIsImV4cCI6MjA1ODExNDgzMn0.HWYpAmZywZurUCOIE35-UFZMc8ZBD1_tRvyoN9qvoMI"
+  }
+}
